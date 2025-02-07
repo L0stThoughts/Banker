@@ -265,32 +265,45 @@ namespace BankerCore
         /// </summary>
         private string ProxyToRemote(string remoteIp, string command)
         {
-            int remotePort = 65530;
+            int[] availablePorts = { 65530, 65529, 65528, 65527, 65526, 65525, 65531, 65532, 65533, 65534, 65535 }; // Priority order from most important
 
-            try
+            foreach (int port in availablePorts)
             {
-                using TcpClient client = new TcpClient();
-                client.ReceiveTimeout = _proxyTimeoutMs;
-                client.SendTimeout = _proxyTimeoutMs;
-
-                client.Connect(IPAddress.Parse(remoteIp), remotePort);
-
-                using NetworkStream ns = client.GetStream();
-                using var sr = new System.IO.StreamReader(ns, Encoding.UTF8);
-                using var sw = new System.IO.StreamWriter(ns, new UTF8Encoding(false))
+                try
                 {
-                    AutoFlush = true
-                };
+                    using TcpClient client = new TcpClient();
+                    client.ReceiveTimeout = _proxyTimeoutMs;
+                    client.SendTimeout = _proxyTimeoutMs;
 
-                sw.WriteLine(command);
-                string response = sr.ReadLine();
+                    Console.WriteLine($"Attempting to connect to {remoteIp}:{port}...");
+                    client.Connect(IPAddress.Parse(remoteIp), port);
 
-                return response ?? $"ER No response from {remoteIp}";
+                    Console.WriteLine($"Connected to {remoteIp}:{port}");
+
+                    using NetworkStream ns = client.GetStream();
+                    using var sr = new StreamReader(ns, Encoding.UTF8);
+                    using var sw = new StreamWriter(ns, new UTF8Encoding(false))
+                    {
+                        AutoFlush = true
+                    };
+
+                    sw.WriteLine(command);
+                    string response = sr.ReadLine();
+
+                    return response ?? $"ER No response from {remoteIp} on port {port}";
+                }
+                catch (SocketException)
+                {
+                    Console.WriteLine($"Failed to connect to {remoteIp}:{port}, trying next...");
+                    continue; // Try next port
+                }
+                catch (Exception ex)
+                {
+                    return $"ER Proxy error on {remoteIp}:{port} - {ex.Message}";
+                }
             }
-            catch (Exception ex)
-            {
-                return $"ER Proxy error: {ex.Message}";
-            }
+
+            return $"ER No available ports could establish a connection to {remoteIp}";
         }
     }
 }

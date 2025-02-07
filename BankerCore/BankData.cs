@@ -1,4 +1,6 @@
-﻿namespace BankerCore
+﻿using System.Text.Json;
+
+namespace BankerCore
 {
     /// <summary>
     /// Holds the local bank's accounts, balance info, and handles persistence.
@@ -33,22 +35,9 @@
 
             try
             {
-                var lines = File.ReadAllLines(_storageFile);
-                var newDict = new Dictionary<int, long>();
+                string json = File.ReadAllText(_storageFile);
+                _accounts = JsonSerializer.Deserialize<Dictionary<int, long>>(json) ?? new Dictionary<int, long>();
 
-                foreach (var line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-                    var parts = line.Split(';');
-                    if (parts.Length == 2)
-                    {
-                        int acct = int.Parse(parts[0]);
-                        long bal = long.Parse(parts[1]);
-                        newDict[acct] = bal;
-                    }
-                }
-
-                _accounts = newDict;
                 Logging.WriteLog($"Loaded {_accounts.Count} accounts from storage.");
             }
             catch (Exception ex)
@@ -65,17 +54,11 @@
         {
             try
             {
-                List<string> lines = new List<string>();
-
                 lock (_sync)
                 {
-                    foreach (var kvp in _accounts)
-                    {
-                        lines.Add($"{kvp.Key};{kvp.Value}");
-                    }
+                    string json = JsonSerializer.Serialize(_accounts, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_storageFile, json);
                 }
-
-                File.WriteAllLines(_storageFile, lines);
             }
             catch (Exception ex)
             {

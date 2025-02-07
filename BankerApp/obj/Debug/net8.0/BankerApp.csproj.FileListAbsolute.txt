@@ -34,3 +34,4 @@ A:\Documents\PV\Banker\BankerApp\obj\Debug\net8.0\refint\BankerApp.dll
 A:\Documents\PV\Banker\BankerApp\obj\Debug\net8.0\BankerApp.pdb
 A:\Documents\PV\Banker\BankerApp\obj\Debug\net8.0\BankerApp.genruntimeconfig.cache
 A:\Documents\PV\Banker\BankerApp\obj\Debug\net8.0\ref\BankerApp.dll
+A:\Documents\PV\Banker\BankerApp\obj\Debug\net8.0\BankerApp.sourcelink.json

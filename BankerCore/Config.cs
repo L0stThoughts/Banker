@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text.Json;
 
@@ -8,7 +9,7 @@ namespace BankerCore
     {
         public string BankIp { get; set; } = GetLocalIPAddress(); // Server's local IP
         public int Port { get; set; } = 65530;                   // Port for server communication
-        public string StorageFile { get; set; } = "bankdata.txt"; // Path to the storage file
+        public string StorageFile { get; set; } = "bankdata.json"; // Path to the storage file
         public int ClientTimeoutMs { get; set; } = 5000;         // Client timeout in milliseconds
         public int ProxyTimeoutMs { get; set; } = 5000;          // Proxy timeout in milliseconds
 
@@ -57,23 +58,22 @@ namespace BankerCore
         /// </summary>
         public static string GetLocalIPAddress()
         {
-            try
+            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+                if (ni.OperationalStatus == OperationalStatus.Up)
                 {
-                    socket.Connect("8.8.8.8", 80); // Google's public DNS server
-                    if (socket.LocalEndPoint is IPEndPoint endPoint)
+                    foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
                     {
-                        return endPoint.Address.ToString();
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork &&
+                            !IPAddress.IsLoopback(ip.Address) &&
+                            ni.GetIPProperties().GatewayAddresses.Count > 0) // Ensure it has a default gateway
+                        {
+                            return ip.Address.ToString(); // Select the first valid IP with a gateway
+                        }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving local IP: {ex.Message}");
-            }
-
-            return "127.0.0.1"; // Fallback if no valid IP is found
+            return "127.0.0.1"; // Fallback
         }
 
         /// <summary>

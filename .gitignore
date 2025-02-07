@@ -1,3 +1,7 @@
 /.vs
 banker.log
-bankdata.txt
+BankerCore/bin
+BankerCore/obj
+BankerApp/bin
+BankerApp/obj
+bankdata.json
